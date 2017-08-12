@@ -11,11 +11,6 @@ __device__ __host__ int littleToBigEndian(int num) {
     #endif
 }
 
-void loadMinibatch(std::ifstream& dataFile, std::ifstream& labelFile, Matrix_UC& minibatchDataRaw, Matrix_UC& minibatchLabelsRaw) {
-    dataFile.read(reinterpret_cast<char*>(&minibatchDataRaw[0]), sizeof(minibatchDataRaw[0]) * minibatchDataRaw.size());
-    labelFile.read(reinterpret_cast<char*>(&minibatchLabelsRaw[0]), sizeof(minibatchLabelsRaw[0]) * minibatchLabelsRaw.size());
-}
-
 void saveMinibatch(Matrix_F& minibatchData, Matrix_F& minibatchLabels, std::string& outputPath, int minibatchNum) {
     std::string minibatchSaveFile = outputPath + "/" + std::to_string(minibatchNum) + ".minibatch";
     std::cout << "Saving minibatch " << minibatchNum << " to " << minibatchSaveFile << '\n';
@@ -51,6 +46,11 @@ void parseHeader(std::ifstream& dataFile, std::ifstream& labelFile, int& magicNu
     std::cout << "Number of Items: " << numItems << '\n';
     std::cout << "Dimensions: " << rows << "x" << cols << '\n';
     std::cout << "Minibatch Size: " << minibatchSize << '\n';
+}
+
+void parseData(std::ifstream& dataFile, std::ifstream& labelFile, Matrix_UC& minibatchDataRaw, Matrix_UC& minibatchLabelsRaw) {
+    dataFile.read(reinterpret_cast<char*>(&minibatchDataRaw[0]), sizeof(minibatchDataRaw[0]) * minibatchDataRaw.size());
+    labelFile.read(reinterpret_cast<char*>(&minibatchLabelsRaw[0]), sizeof(minibatchLabelsRaw[0]) * minibatchLabelsRaw.size());
 }
 
 void processData(Matrix_F& minibatchData, Matrix_UC& minibatchDataRaw) {
@@ -91,7 +91,7 @@ int main(int argc, char const *argv[]) {
         // Loop over all minibatches.
         for (int i = 0; i < numMinibatches - 1; ++i) {
             // Read in data 1 minibatch at a time.
-            loadMinibatch(dataFile, labelFile, minibatchDataRaw, minibatchLabelsRaw);
+            parseData(dataFile, labelFile, minibatchDataRaw, minibatchLabelsRaw);
             // Process the minibatch.
             processData(minibatchData, minibatchDataRaw);
             processLabels(minibatchLabels, minibatchLabelsRaw);
@@ -106,7 +106,7 @@ int main(int argc, char const *argv[]) {
         minibatchData = Matrix_F(itemsRemaining, rows * cols);
         minibatchLabels = Matrix_F(itemsRemaining, 10);
         // Read data and labels for last minibatch.
-        loadMinibatch(dataFile, labelFile, minibatchDataRaw, minibatchLabelsRaw);
+        parseData(dataFile, labelFile, minibatchDataRaw, minibatchLabelsRaw);
         // Process it.
         processData(minibatchData, minibatchDataRaw);
         processLabels(minibatchLabels, minibatchLabelsRaw);
