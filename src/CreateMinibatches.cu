@@ -98,7 +98,6 @@ int main(int argc, char const *argv[]) {
             // Save.
             saveMinibatch(minibatchData, minibatchLabels, outputPath, i);
         }
-
         // Handle leftover items.
         int itemsRemaining = numItems - minibatchSize * (numMinibatches - 1);
         minibatchDataRaw = Matrix_UC(itemsRemaining, rows * cols);
