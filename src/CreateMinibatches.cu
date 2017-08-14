@@ -1,10 +1,7 @@
-#include "Matrix.hpp"
-#include "Minibatch.hpp"
+#include "StealthMatrix.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
-// Define a minibatch using custom matrix class.
-typedef ai::Minibatch<Matrix_F> Minibatch_F;
 
 __device__ __host__ int littleToBigEndian(int num) {
     #ifdef LITTLE_ENDIAN
@@ -39,37 +36,36 @@ void parseHeader(std::ifstream& dataFile, std::ifstream& labelFile, int& magicNu
     std::cout << "Minibatch Size: " << minibatchSize << '\n';
 }
 
-void parseMinibatch(std::ifstream& dataFile, std::ifstream& labelFile, Matrix_UC& minibatchDataRaw, Matrix_UC& minibatchLabelsRaw) {
+void parseMinibatch(std::ifstream& dataFile, std::ifstream& labelFile, StealthMatrix_UC& minibatchDataRaw, StealthMatrix_UC& minibatchLabelsRaw) {
     dataFile.read(reinterpret_cast<char*>(&minibatchDataRaw[0]), sizeof(minibatchDataRaw[0]) * minibatchDataRaw.size());
     labelFile.read(reinterpret_cast<char*>(&minibatchLabelsRaw[0]), sizeof(minibatchLabelsRaw[0]) * minibatchLabelsRaw.size());
 }
 
-Minibatch_F processMinibatch(const Matrix_UC& minibatchDataRaw, const Matrix_UC& minibatchLabelsRaw) {
-    Matrix_F minibatchData = (255 - minibatchDataRaw.asType<float>()) / 255;
-    Matrix_F minibatchLabels(minibatchLabelsRaw.numRows(), 10);
+void processMinibatch(const StealthMatrix_UC& minibatchDataRaw, const StealthMatrix_UC& minibatchLabelsRaw, std::string& outputPath, int minibatchNum) {
+    StealthMatrix_F minibatchData = (255 - minibatchDataRaw.asType<float>()) / 255;
+    StealthMatrix_F minibatchLabels(minibatchLabelsRaw.numRows(), 10);
     for (int row = 0; row < minibatchLabelsRaw.numRows(); ++row) {
         minibatchLabels.at(row, minibatchLabelsRaw[row]) = 1.0;
     }
-    return Minibatch_F(minibatchData, minibatchLabels);
-}
-
-void saveMinibatch(const Minibatch_F& minibatch, std::string& outputPath, int minibatchNum) {
+    // Save!
     std::string minibatchSaveFile = outputPath + "/" + std::to_string(minibatchNum) + ".minibatch";
     std::cout << "Saving minibatch " << minibatchNum << " to " << minibatchSaveFile << '\n';
-    minibatch.save(minibatchSaveFile);
+    std::ofstream mbFile(minibatchSaveFile);
+    minibatchData.save(mbFile);
+    minibatchLabels.save(mbFile);
 }
 
 // Translates the MNIST dataset into a matrix friendly format.
 int main(int argc, char const *argv[]) {
     std::string dataPath, labelPath, outputPath;
     int numMinibatches = 1;
-    try {
+    if (argc > 3) {
         // Get the raw data file and then the labels.
         dataPath = argv[1];
         labelPath = argv[2];
         outputPath = argv[3];
         numMinibatches = (argc % 2) ? std::stoi(argv[argc - 1]) : numMinibatches;
-    } catch (const std::exception& e) {
+    } else {
         std::cout << "Usage: " << argv[0] << " DATA-FILE LABELS-FILE OUTPUT-DIR [# MINIBATCHES]" << '\n';
         return 1;
     }
@@ -82,27 +78,22 @@ int main(int argc, char const *argv[]) {
     if (dataFile.is_open() && labelFile.is_open()) {
         parseHeader(dataFile, labelFile, magicNumberData, magicNumberLabels, numItems, rows, cols, numMinibatches, minibatchSize);
         // Data contains images, labels are 10 values with 1 of them equal to 1.0.
-        Matrix_UC minibatchDataRaw(minibatchSize, rows * cols), minibatchLabelsRaw(minibatchSize, 1);
-        Minibatch_F minibatch;
+        StealthMatrix_UC minibatchDataRaw(minibatchSize, rows * cols), minibatchLabelsRaw(minibatchSize, 1);
         // Loop over all minibatches.
         for (int i = 0; i < numMinibatches - 1; ++i) {
             // Read in data 1 minibatch at a time.
             parseMinibatch(dataFile, labelFile, minibatchDataRaw, minibatchLabelsRaw);
-            // Process the minibatch.
-            minibatch = processMinibatch(minibatchDataRaw, minibatchLabelsRaw);
-            // Save.
-            saveMinibatch(minibatch, outputPath, i);
+            // Process and save the minibatch.
+            processMinibatch(minibatchDataRaw, minibatchLabelsRaw, outputPath, i);
         }
         // Handle leftover items.
         int itemsRemaining = numItems - minibatchSize * (numMinibatches - 1);
-        minibatchDataRaw = Matrix_UC(itemsRemaining, rows * cols);
-        minibatchLabelsRaw = Matrix_UC(itemsRemaining, 1);
+        minibatchDataRaw = StealthMatrix_UC(itemsRemaining, rows * cols);
+        minibatchLabelsRaw = StealthMatrix_UC(itemsRemaining, 1);
         // Read data and labels for last minibatch.
         parseMinibatch(dataFile, labelFile, minibatchDataRaw, minibatchLabelsRaw);
-        // Process it.
-        minibatch = processMinibatch(minibatchDataRaw, minibatchLabelsRaw);
-        // Save.
-        saveMinibatch(minibatch, outputPath, numMinibatches - 1);
+        // Process and save it.
+        processMinibatch(minibatchDataRaw, minibatchLabelsRaw, outputPath, numMinibatches - 1);
     } else {
         throw std::invalid_argument("Could not open data.");
     }

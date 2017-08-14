@@ -1,16 +1,21 @@
-#include "Matrix.hpp"
+#include "StealthMatrix.hpp"
 #include "Layer/FullyConnectedLayer.hpp"
 #include "NeuralNetwork.hpp"
 #include "NeuralNetworkOptimizer.hpp"
 #include "NeuralNetworkSaver.hpp"
+#include "StealthDirectory.hpp"
+#include <vector>
+#include <fstream>
 // Define layers using a custom matrix class.
-typedef SigmoidFCL<Matrix_F> SigmoidFCL_F;
-typedef LeakyReLUFCL<Matrix_F> LeakyReLUFCL_F;
+typedef StealthAI::SigmoidFCL<StealthMatrix_F> SigmoidFCL_F;
+typedef StealthAI::LeakyReLUFCL<StealthMatrix_F> LeakyReLUFCL_F;
 // Define a network using a custom matrix class.
 template <typename... Layers>
-using NeuralNetwork_F = ai::NeuralNetwork<Matrix_F, Layers...>;
+using NeuralNetwork_F = StealthAI::NeuralNetwork<StealthMatrix_F, Layers...>;
+// Define a dataset using a custom matrix class;
+typedef StealthAI::DataSet<StealthMatrix_F> DataSet_F;
 // Define an optimizer using a custom matrix class.
-typedef ai::NeuralNetworkOptimizer<Matrix_F, ai::mse_prime<Matrix_F>> NeuralNetworkOptimizer_F;
+typedef StealthAI::NeuralNetworkOptimizer<StealthMatrix_F, StealthAI::mse<StealthMatrix_F>, StealthAI::mse_prime<StealthMatrix_F>> NeuralNetworkOptimizer_MSE_F;
 
 int main() {
     // Create some layers.
@@ -19,7 +24,28 @@ int main() {
     // Create the network.
     NeuralNetwork_F<SigmoidFCL_F, SigmoidFCL_F> digitRecognizer(inputLayer, outputLayer);
     // Create an optimizer.
-    NeuralNetworkOptimizer_F optimizer("./data/training/");
+    NeuralNetworkOptimizer_MSE_F optimizer;
+    // Load data.
+    DataSet_F trainingInputs;
+    DataSet_F trainingExpectedOutputs;
+    StealthDirectory::Directory dataDir("./data/training");
+    for (auto minibatch : dataDir) {
+        std::ifstream inputFile(minibatch.getPath());
+        trainingInputs.emplace_back(inputFile);
+        trainingExpectedOutputs.emplace_back(inputFile);
+    }
+    std::cout << "Loaded " << trainingInputs.size() << " minibatches" << '\n';
+    // Minibatch 1
+    trainingExpectedOutputs[0].argmax().transpose().display("Expected Output");
+    digitRecognizer.feedForward(trainingInputs[0]).argmax().transpose().display("Actual Output");
     // Train for 1 epoch!
-    optimizer.train(digitRecognizer, 0.001);
+    optimizer.getAverageCost(digitRecognizer, trainingInputs, trainingExpectedOutputs).display("Average Cost Before");
+    optimizer.train<20>(digitRecognizer, trainingInputs, trainingExpectedOutputs, 0.001);
+    optimizer.getAverageCost(digitRecognizer, trainingInputs, trainingExpectedOutputs).display("Average Cost After");
+    // After training
+    StealthMatrix_F expectedOutput = trainingExpectedOutputs[0].argmax().transpose();
+    StealthMatrix_F actualOutput = digitRecognizer.feedForward(trainingInputs[0]).argmax().transpose();
+    expectedOutput.display("Expected Output");
+    actualOutput.display("Actual Output");
+    (actualOutput - expectedOutput).display("Delta");
 }
