@@ -42,7 +42,8 @@ void parseMinibatch(std::ifstream& dataFile, std::ifstream& labelFile, StealthMa
 }
 
 void processMinibatch(const StealthMatrix_UC& minibatchDataRaw, const StealthMatrix_UC& minibatchLabelsRaw, std::string& outputPath, int minibatchNum) {
-    StealthMatrix_F minibatchData = (255 - minibatchDataRaw.asType<float>()) / 255;
+    // StealthMatrix_F minibatchData = (255 - minibatchDataRaw.asType<float>()) / 255;
+    StealthMatrix_F minibatchData = (minibatchDataRaw.asType<float>()) / 255;
     StealthMatrix_F minibatchLabels(minibatchLabelsRaw.numRows(), 10);
     for (int row = 0; row < minibatchLabelsRaw.numRows(); ++row) {
         minibatchLabels.at(row, minibatchLabelsRaw[row]) = 1.0;
