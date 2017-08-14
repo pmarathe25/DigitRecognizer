@@ -25,7 +25,7 @@ int main() {
     }
     std::cout << "Loaded " << trainingInputs.size() << " minibatches" << '\n';
     // Train!
-    optimizer.train<30>(digitRecognizer, trainingInputs, trainingExpectedOutputs, 0.01);
+    optimizer.train<100>(digitRecognizer, trainingInputs, trainingExpectedOutputs, 0.01);
     // Save!
     StealthAI::NeuralNetworkSaver::save(digitRecognizer, "./network/DigitRecognizer.nn");
 
