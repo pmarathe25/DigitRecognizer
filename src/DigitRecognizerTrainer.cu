@@ -2,8 +2,8 @@
 #include "StealthDirectory.hpp"
 #include "Layer/FullyConnectedLayer.hpp"
 #include "NeuralNetwork.hpp"
-#include "NeuralNetworkOptimizer.hpp"
 #include "NeuralNetworkSaver.hpp"
+#include "NeuralNetworkOptimizer.hpp"
 #include <vector>
 #include <fstream>
 // Define layers using a custom matrix class.
@@ -40,7 +40,7 @@ int main() {
     digitRecognizer.feedForward(trainingInputs[0]).argmax().transpose().display("Actual Output");
     // Train for 1 epoch!
     optimizer.getAverageCost(digitRecognizer, trainingInputs, trainingExpectedOutputs).display("Average Cost Before");
-    optimizer.train<20>(digitRecognizer, trainingInputs, trainingExpectedOutputs, 0.001);
+    optimizer.train<40>(digitRecognizer, trainingInputs, trainingExpectedOutputs, 0.01);
     optimizer.getAverageCost(digitRecognizer, trainingInputs, trainingExpectedOutputs).display("Average Cost After");
     // Save!
     StealthAI::NeuralNetworkSaver::save(digitRecognizer, "./network/DigitRecognizer.nn");

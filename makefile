@@ -17,12 +17,20 @@ HEADERFILES += $(addprefix $(LIBNN_INCLUDEPATH)/, Layer/FullyConnectedLayer.hpp 
 # Object files
 CREATEMINIBATCHES_OBJS = $(addprefix $(BUILDDIR)/, createMinibatches.o)
 DIGITRECOGNIZERTRAINER_OBJS = $(addprefix $(BUILDDIR)/, digitRecognizerTrainer.o)
+DIGITRECOGNIZER_OBJS = $(addprefix $(BUILDDIR)/, digitRecognizer.o)
 # Compiler
 CXX = nvcc
 CFLAGS = -arch=sm_35 -Xcompiler -fPIC -Wno-deprecated-gpu-targets -c -std=c++11 $(INCLUDEDIR)
 LFLAGS = -Wno-deprecated-gpu-targets
+EXECLFLAGS = -lsfml-graphics -Wno-deprecated-gpu-targets
 
-all: $(BINDIR)/createMinibatches $(BINDIR)/digitRecognizerTrainer
+all: $(BINDIR)/createMinibatches $(BINDIR)/digitRecognizerTrainer $(BINDIR)/digitRecognizer
+
+$(BINDIR)/digitRecognizer: $(DIGITRECOGNIZER_OBJS) $(LIBSTEALTHMAT)
+	$(CXX) $(EXECLFLAGS) $(LIBS) $(DIGITRECOGNIZER_OBJS) -o $(BINDIR)/digitRecognizer
+
+$(BUILDDIR)/digitRecognizer.o: $(HEADERFILES) $(SRCDIR)/DigitRecognizer.cu
+	$(CXX) $(CFLAGS) $(SRCDIR)/DigitRecognizer.cu -o $(BUILDDIR)/digitRecognizer.o
 
 $(BINDIR)/digitRecognizerTrainer: $(DIGITRECOGNIZERTRAINER_OBJS) $(LIBSTEALTHMAT)
 	$(CXX) $(LFLAGS) $(LIBS) $(DIGITRECOGNIZERTRAINER_OBJS) -o $(BINDIR)/digitRecognizerTrainer
@@ -37,10 +45,13 @@ $(BUILDDIR)/createMinibatches.o: $(HEADERFILES) $(SRCDIR)/CreateMinibatches.cu
 	$(CXX) $(CFLAGS) $(SRCDIR)/CreateMinibatches.cu -o $(BUILDDIR)/createMinibatches.o
 
 clean:
-	rm $(CREATEMINIBATCHES_OBJS) $(DIGITRECOGNIZERTRAINER_OBJS) $(BINDIR)/*
+	rm $(CREATEMINIBATCHES_OBJS) $(DIGITRECOGNIZERTRAINER_OBJS) $(DIGITRECOGNIZER_OBJS) $(BINDIR)/*
 
 train: $(BINDIR)/digitRecognizerTrainer
 	$(SCRIPTSDIR)/train.sh
 
 dataset: $(BINDIR)/createMinibatches
 	$(SCRIPTSDIR)/processMinibatches.sh
+
+run: $(BINDIR)/digitRecognizer
+	$(SCRIPTSDIR)/run.sh
