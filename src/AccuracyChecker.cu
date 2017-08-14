@@ -18,6 +18,9 @@ typedef StealthAI::DataSet<StealthMatrix_F> DataSet_F;
 int main() {
     // Load!
     StealthAI::NeuralNetworkSaver::load(digitRecognizer, "./network/DigitRecognizer.nn");
+
+    // outputLayer.getBiases().display("Biases when loading.");
+
     // Load testing set.
     DataSet_F testingInputs;
     DataSet_F testingExpectedOutputs;

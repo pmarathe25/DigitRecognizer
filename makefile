@@ -14,6 +14,7 @@ LIBS = $(LIBSTEALTHMAT) $(LIBSTEALTHDIR)
 # Headers
 HEADERFILES += $(addprefix $(LIBMATH_INCLUDEPATH)/, StealthMatrix.hpp)
 HEADERFILES += $(addprefix $(LIBNN_INCLUDEPATH)/, Layer/FullyConnectedLayer.hpp NeuralNetwork.hpp NeuralNetworkOptimizer.hpp NeuralNetworkSaver.hpp)
+HEADERFILES += $(addprefix include/, NetworkDefinition.hpp)
 # Object files
 CREATEMINIBATCHES_OBJS = $(addprefix $(BUILDDIR)/, createMinibatches.o)
 DIGITRECOGNIZERTRAINER_OBJS = $(addprefix $(BUILDDIR)/, digitRecognizerTrainer.o)
@@ -55,6 +56,7 @@ clean:
 	rm $(CREATEMINIBATCHES_OBJS) $(DIGITRECOGNIZERTRAINER_OBJS) $(DIGITRECOGNIZER_OBJS) $(BINDIR)/*
 
 train: $(BINDIR)/digitRecognizerTrainer
+	rm ./network/DigitRecognizer.nn
 	$(SCRIPTSDIR)/train.sh
 
 test: $(BINDIR)/accuracyChecker
