@@ -18,6 +18,7 @@ HEADERFILES += $(addprefix $(LIBNN_INCLUDEPATH)/, Layer/FullyConnectedLayer.hpp 
 CREATEMINIBATCHES_OBJS = $(addprefix $(BUILDDIR)/, createMinibatches.o)
 DIGITRECOGNIZERTRAINER_OBJS = $(addprefix $(BUILDDIR)/, digitRecognizerTrainer.o)
 DIGITRECOGNIZER_OBJS = $(addprefix $(BUILDDIR)/, digitRecognizer.o)
+ACCURACYCHECKER_OBJS = $(addprefix $(BUILDDIR)/, accuracyChecker.o)
 # Compiler
 CXX = nvcc
 CFLAGS = -arch=sm_35 -Xcompiler -fPIC -Wno-deprecated-gpu-targets -c -std=c++11 $(INCLUDEDIR)
@@ -31,6 +32,12 @@ $(BINDIR)/digitRecognizer: $(DIGITRECOGNIZER_OBJS) $(LIBSTEALTHMAT)
 
 $(BUILDDIR)/digitRecognizer.o: $(HEADERFILES) $(SRCDIR)/DigitRecognizer.cu
 	$(CXX) $(CFLAGS) $(SRCDIR)/DigitRecognizer.cu -o $(BUILDDIR)/digitRecognizer.o
+
+$(BINDIR)/accuracyChecker: $(ACCURACYCHECKER_OBJS) $(LIBSTEALTHMAT)
+	$(CXX) $(LFLAGS) $(LIBS) $(ACCURACYCHECKER_OBJS) -o $(BINDIR)/accuracyChecker
+
+$(BUILDDIR)/accuracyChecker.o: $(HEADERFILES) $(SRCDIR)/AccuracyChecker.cu
+	$(CXX) $(CFLAGS) $(SRCDIR)/AccuracyChecker.cu -o $(BUILDDIR)/accuracyChecker.o
 
 $(BINDIR)/digitRecognizerTrainer: $(DIGITRECOGNIZERTRAINER_OBJS) $(LIBSTEALTHMAT)
 	$(CXX) $(LFLAGS) $(LIBS) $(DIGITRECOGNIZERTRAINER_OBJS) -o $(BINDIR)/digitRecognizerTrainer
@@ -49,6 +56,9 @@ clean:
 
 train: $(BINDIR)/digitRecognizerTrainer
 	$(SCRIPTSDIR)/train.sh
+
+test: $(BINDIR)/accuracyChecker
+	$(BINDIR)/accuracyChecker
 
 dataset: $(BINDIR)/createMinibatches
 	$(SCRIPTSDIR)/processMinibatches.sh

@@ -6,18 +6,6 @@
 #include "NeuralNetworkOptimizer.hpp"
 #include <vector>
 #include <fstream>
-
-template <typename Matrix>
-inline Matrix mseUnique(const Matrix& networkOutput, const Matrix& expectedOutput) {
-    // Ensure that only one of the outputs goes high.
-    return ((expectedOutput - networkOutput).pow(2) / 2).addVector((networkOutput.weightedSum(0) - 1) / 10);
-}
-
-template <typename Matrix>
-inline Matrix mseUnique_prime(const Matrix& networkOutput, const Matrix& expectedOutput) {
-    return networkOutput - expectedOutput.addVector((networkOutput.weightedSum(0) - 1) / 10);
-}
-
 // Define layers using a custom matrix class.
 typedef StealthAI::SigmoidFCL<StealthMatrix_F> SigmoidFCL_F;
 typedef StealthAI::LeakyReLUFCL<StealthMatrix_F> LeakyReLUFCL_F;
@@ -27,19 +15,19 @@ using NeuralNetwork_F = StealthAI::NeuralNetwork<StealthMatrix_F, Layers...>;
 // Define a dataset using a custom matrix class;
 typedef StealthAI::DataSet<StealthMatrix_F> DataSet_F;
 // Define an optimizer using a custom matrix class.
-typedef StealthAI::NeuralNetworkOptimizer<StealthMatrix_F, mseUnique<StealthMatrix_F>, mseUnique_prime<StealthMatrix_F>> NeuralNetworkOptimizer_MSEUNIQUE_F;
+typedef StealthAI::NeuralNetworkOptimizer<StealthMatrix_F, StealthAI::mse<StealthMatrix_F>, StealthAI::mse_prime<StealthMatrix_F>> NeuralNetworkOptimizer_MSE_F;
 
 int main() {
     // Create some layers.
-    SigmoidFCL_F inputLayer(784, 30);
+    SigmoidFCL_F inputLayer(784, 250);
+    SigmoidFCL_F hiddenLayer(250, 30);
     SigmoidFCL_F outputLayer(30, 10);
     // Create the network.
-    NeuralNetwork_F<SigmoidFCL_F, SigmoidFCL_F> digitRecognizer(inputLayer, outputLayer);
+    NeuralNetwork_F<SigmoidFCL_F, SigmoidFCL_F, SigmoidFCL_F> digitRecognizer(inputLayer, hiddenLayer, outputLayer);
     // Create an optimizer.
-    NeuralNetworkOptimizer_MSEUNIQUE_F optimizer;
+    NeuralNetworkOptimizer_MSE_F optimizer;
     // Load data.
-    DataSet_F trainingInputs;
-    DataSet_F trainingExpectedOutputs;
+    DataSet_F trainingInputs, trainingExpectedOutputs;
     StealthDirectory::Directory dataDir("./data/training");
     for (auto minibatch : dataDir) {
         std::ifstream inputFile(minibatch.getPath());
@@ -47,19 +35,8 @@ int main() {
         trainingExpectedOutputs.emplace_back(inputFile);
     }
     std::cout << "Loaded " << trainingInputs.size() << " minibatches" << '\n';
-    // Minibatch 1
-    trainingExpectedOutputs[0].argmax().transpose().display("Expected Output");
-    digitRecognizer.feedForward(trainingInputs[0]).argmax().transpose().display("Actual Output");
-    // Train for 1 epoch!
-    optimizer.getAverageCost(digitRecognizer, trainingInputs, trainingExpectedOutputs).display("Average Cost Before");
-    optimizer.train<40>(digitRecognizer, trainingInputs, trainingExpectedOutputs, 0.01);
-    optimizer.getAverageCost(digitRecognizer, trainingInputs, trainingExpectedOutputs).display("Average Cost After");
+    // Train!
+    optimizer.train<30>(digitRecognizer, trainingInputs, trainingExpectedOutputs, 0.01);
     // Save!
     StealthAI::NeuralNetworkSaver::save(digitRecognizer, "./network/DigitRecognizer.nn");
-    // After training
-    StealthMatrix_F expectedOutput = trainingExpectedOutputs[0].argmax().transpose();
-    StealthMatrix_F actualOutput = digitRecognizer.feedForward(trainingInputs[0]).argmax().transpose();
-    expectedOutput.display("Expected Output");
-    actualOutput.display("Actual Output");
-    (actualOutput - expectedOutput).display("Delta");
 }

@@ -12,10 +12,11 @@ using NeuralNetwork_F = StealthAI::NeuralNetwork<StealthMatrix_F, Layers...>;
 
 int main() {
     // Create some layers.
-    SigmoidFCL_F inputLayer(784, 30);
+    SigmoidFCL_F inputLayer(784, 250);
+    SigmoidFCL_F hiddenLayer(250, 30);
     SigmoidFCL_F outputLayer(30, 10);
     // Create the network.
-    NeuralNetwork_F<SigmoidFCL_F, SigmoidFCL_F> digitRecognizer(inputLayer, outputLayer);
+    NeuralNetwork_F<SigmoidFCL_F, SigmoidFCL_F, SigmoidFCL_F> digitRecognizer(inputLayer, hiddenLayer, outputLayer);
     // Load!
     StealthAI::NeuralNetworkSaver::load(digitRecognizer, "./network/DigitRecognizer.nn");
     // Load an image too.
@@ -33,6 +34,5 @@ int main() {
     std::cout << "Loaded an image of dimensions " << width << "x" << height << '\n';
     digitRecognizer.feedForward(input.reshape(1)).argmax().display("Prediction");
     digitRecognizer.feedForward(input.reshape(1)).display("Raw Prediction");
-
 
 }
