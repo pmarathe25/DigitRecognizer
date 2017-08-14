@@ -3,6 +3,7 @@
 #include "Layer/FullyConnectedLayer.hpp"
 #include "NeuralNetwork.hpp"
 #include "NeuralNetworkSaver.hpp"
+#include "NetworkDefinition.hpp"
 #include <vector>
 #include <fstream>
 
@@ -11,25 +12,12 @@ __device__ T isNonZero(T in) {
     return in != 0;
 }
 
-// Define layers using a custom matrix class.
-typedef StealthAI::SigmoidFCL<StealthMatrix_F> SigmoidFCL_F;
-typedef StealthAI::LeakyReLUFCL<StealthMatrix_F> LeakyReLUFCL_F;
-// Define a network using a custom matrix class.
-template <typename... Layers>
-using NeuralNetwork_F = StealthAI::NeuralNetwork<StealthMatrix_F, Layers...>;
 // Define a dataset using a custom matrix class;
 typedef StealthAI::DataSet<StealthMatrix_F> DataSet_F;
 
 int main() {
-    // Create some layers.
-    SigmoidFCL_F inputLayer(784, 250);
-    SigmoidFCL_F hiddenLayer(250, 30);
-    SigmoidFCL_F outputLayer(30, 10);
-    // Create the network.
-    NeuralNetwork_F<SigmoidFCL_F, SigmoidFCL_F, SigmoidFCL_F> digitRecognizer(inputLayer, hiddenLayer, outputLayer);
     // Load!
     StealthAI::NeuralNetworkSaver::load(digitRecognizer, "./network/DigitRecognizer.nn");
-
     // Load testing set.
     DataSet_F testingInputs;
     DataSet_F testingExpectedOutputs;

@@ -61,6 +61,8 @@ test: $(BINDIR)/accuracyChecker
 	$(BINDIR)/accuracyChecker
 
 dataset: $(BINDIR)/createMinibatches
+	rm ./data/training/*
+	rm ./data/testing/*
 	$(SCRIPTSDIR)/processMinibatches.sh
 
 run: $(BINDIR)/digitRecognizer
